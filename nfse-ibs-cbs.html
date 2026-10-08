@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NFS-e com IBS/CBS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --papel:#F3F4F0; --cartao:#FFFFFF; --tinta:#1A2420; --suave:#56635D; --linha:#D5DAD3;
+  --novo:#B3261E; --igual:#2F6B4F; --alvo:#E9B81F; --acao:#1D4E89;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--papel:#121815;--cartao:#1B2420;--tinta:#E9EEEA;--suave:#A3B0A9;--linha:#2E3A34;--novo:#FF8A80;--igual:#7CCBA2;--acao:#8DB8F0}
+}
+:root[data-theme="dark"]{--papel:#121815;--cartao:#1B2420;--tinta:#E9EEEA;--suave:#A3B0A9;--linha:#2E3A34;--novo:#FF8A80;--igual:#7CCBA2;--acao:#8DB8F0}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:"Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;font-size:17px;line-height:1.45}
+main{max-width:620px;margin:0 auto;padding:18px 16px 110px}
+h1{font-size:2rem;line-height:1.1;margin:10px 0 8px}
+h2{font-size:1.45rem;line-height:1.15;margin:10px 0 8px}
+h3{font-size:1rem;margin:26px 0 8px}
+p{margin:0 0 12px}
+.suave{color:var(--suave)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--alvo);outline-offset:2px}
+
+.selo{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1.5px solid currentColor;white-space:nowrap}
+.selo.n{color:var(--novo)} .selo.i{color:var(--igual)}
+
+.trilho{display:flex;gap:4px;margin:8px 0 2px}
+.trilho i{flex:1;height:8px;border-radius:4px;background:var(--linha)}
+.trilho i.f{background:var(--acao)}
+
+.topo{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.9rem}
+.link{background:none;border:0;padding:8px 0;color:var(--acao);font-weight:700;text-decoration:underline}
+.lista{list-style:none;margin:0;padding:0;background:var(--cartao);border:1px solid var(--linha);border-radius:12px;overflow:hidden}
+.lista li+li{border-top:1px solid var(--linha)}
+.lista button{display:flex;gap:10px;width:100%;text-align:left;background:none;border:0;padding:13px 14px;align-items:baseline}
+.lista .n{font-weight:700;color:var(--suave);min-width:1.5em}
+.lista .t{flex:1}
+.principal{display:block;width:100%;border:0;border-radius:12px;background:var(--acao);color:#fff;font-weight:700;padding:15px;font-size:1.05rem;margin:14px 0 6px}
+:root[data-theme="dark"] .principal,:root[data-theme="dark"] .rodape button.av{color:#0b1a2c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .principal,:root:not([data-theme="light"]) .rodape button.av{color:#0b1a2c}}
+.aviso{font-size:.88rem;border-left:4px solid var(--alvo);padding:8px 12px;background:var(--cartao);border-radius:0 8px 8px 0;margin:16px 0}
+
+.cola{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:4px 14px;margin:8px 0}
+.cola div{display:flex;gap:12px;padding:10px 0;align-items:baseline}
+.cola div+div{border-top:1px solid var(--linha)}
+.cola b{font-size:1.15rem;min-width:6.2em;font-variant-numeric:tabular-nums}
+.cola span{flex:1;font-size:.93rem}
+
+.acao{font-size:1.08rem}
+.dica{font-size:.93rem;color:var(--suave);border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
+.legenda{font-size:.82rem;color:var(--suave);display:flex;align-items:center;gap:8px;margin:8px 0 14px}
+.legenda span{width:22px;height:12px;border:3px solid var(--alvo);border-radius:4px;flex:none}
+
+.rodape{position:fixed;left:0;right:0;bottom:0;background:var(--cartao);border-top:1px solid var(--linha);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.rodape div{max-width:620px;margin:0 auto;display:flex;gap:10px}
+.rodape button{flex:1;border-radius:10px;padding:13px;font-weight:700;border:1px solid var(--linha);background:var(--papel)}
+.rodape button.av{flex:2;background:var(--acao);border-color:var(--acao);color:#fff}
+.rodape button:disabled{opacity:.4;cursor:default}
+
+/* tela simulada do emissor (cores fixas, como uma captura) */
+.tw{border-radius:10px;overflow:hidden;background:#fff;color:#22292c;font-size:12.5px;line-height:1.35;border:1px solid var(--linha);margin:12px 0 0}
+.abas{display:flex;justify-content:space-around;padding:10px 6px 8px;border-bottom:1px solid #dfe3e5;font-size:10.5px;color:#7a858a;text-align:center}
+.abas span::before{content:"";display:block;width:16px;height:16px;border-radius:50%;border:2px solid #9aa5aa;margin:0 auto 3px}
+.abas span.on{color:#1d3f72;font-weight:700}
+.abas span.on::before{background:#1d3f72;border-color:#1d3f72}
+.tb{padding:12px;background:#f4f5f5}
+.sec{font-size:10.5px;color:#55626a;letter-spacing:.02em;margin:0 0 6px;font-weight:700}
+.sec+.q{margin-top:0}
+.q{margin:8px 0 3px}
+.r{display:block;padding:1px 0}
+.r::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid #7b878d;margin-right:6px;vertical-align:-1px}
+.r.m::before{background:radial-gradient(#1d3f72 45%,#fff 50%);border-color:#1d3f72}
+.f{margin:8px 0}
+.f small{display:block;color:#55626a;font-size:10.5px}
+.f span{display:block;border:1px solid #c3cbcf;padding:5px 7px;min-height:26px;background:#fff;border-radius:2px}
+.f span.cz{background:#e3e6e7}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px}
+.nota{background:#e6e9ec;border-left:3px solid #4a6fa5;padding:6px 8px;font-size:11px;margin:6px 0}
+.b{display:inline-block;padding:6px 12px;border-radius:3px;font-weight:700;font-size:12px;background:#1d3f72;color:#fff}
+.dir{text-align:right;margin-top:10px}
+.op{border:1px solid #c3cbcf;border-top:0;background:#fff}
+.op div{padding:5px 7px;border-top:1px solid #e6eaec}
+.alvo{outline:3px solid #E9B81F;outline-offset:2px;border-radius:4px;display:block}
+span.alvo{display:inline-block}
+hr.s{border:0;border-top:1px solid #dfe3e5;margin:12px 0}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="rodape" id="rodape" hidden><div>
+  <button id="bv">Voltar</button><button id="ba" class="av">Próximo passo</button>
+</div></div>
+
+<script>
+// ---------- peças da tela simulada (dados fictícios) ----------
+const ABAS = ['Pessoas','Serviço','Valores','Emitir NFS-e'];
+const W = (aba, corpo) => `<div class="tw"><div class="abas">${ABAS.map((a,i)=>`<span class="${i===aba?'on':''}">${a}</span>`).join('')}</div><div class="tb">${corpo}</div></div>`;
+const A = h => `<div class="alvo">${h}</div>`;
+const F = (rot, val, cz) => `<div class="f"><small>${rot}</small><span class="${cz?'cz':''}">${val}</span></div>`;
+const R = (ops, marc) => ops.map((o,i)=>`<span class="r ${i===marc?'m':''}">${o}</span>`).join('');
+const S = t => `<p class="sec">${t}</p>`;
+const Q = t => `<p class="q">${t}</p>`;
+
+// ---------- passos ----------
+const P = [
+{f:0,novo:1,t:'Marque Sim para o IBS/CBS',
+ a:'Logo no começo, em "Informações gerais", a pergunta "Preencher as informações IBS/CBS?" precisa ficar em Sim. Depois confira a data de competência.',
+ d:'É essa resposta que faz aparecer os campos novos nas telas seguintes. Obrigatório desde 01/10/2026 para Lucro Presumido.',
+ m:()=>W(0,S('INFORMAÇÕES GERAIS')+A(Q('Preencher as informações IBS/CBS? *')+R(['Sim','Não'],0))+`<div class="nota">Para emissões com IBS/CBS destacado, a data de competência deve ser igual ou maior a 01/01/2026.</div>`+F('Data de Competência *','07/10/2026 🗓'))},
+{f:0,t:'Emitente: Prestador/Fornecedor',
+ a:'Em "Emitente da NFS-e", deixe marcado Prestador/Fornecedor. Município, CNPJ e razão social já vêm salvos com os dados da empresa.',
+ m:()=>W(0,S('EMITENTE DA NFS-E')+Q('Você irá emitir esta NFS-e como? *')+A(R(['Prestador/Fornecedor','Tomador/Adquirente','Intermediário'],0))+F('Município *','Rio de Janeiro/RJ',1)+`<div class="g">${F('CNPJ','00.000.000/0001-00',1)}${F('Razão Social','Sua empresa Ltda',1)}</div>`+F('Opção no Simples Nacional *','Não optante',1))},
+{f:0,novo:1,t:'Compras governamentais: Sim ou Não',
+ a:'Marque Não quando o serviço é para o setor privado (pessoa física ou jurídica). Marque Sim só quando o tomador é órgão de governo: federal, estadual ou municipal.',
+ d:'Hospital ou clínica particular e paciente: Não. Hospital público pagando direto à sua empresa: Sim.',
+ m:()=>W(0,S('COMPRAS GOVERNAMENTAIS')+Q('A operação se trata de uma compra governamental?')+A(R(['Sim','Não'],1)))},
+{f:0,t:'Informe o tomador',
+ a:'Em "Tomador/Adquirente do serviço", marque Brasil, digite o CPF ou CNPJ de quem contrata o serviço e clique na lupa. O sistema puxa o nome da base da Receita Federal.',
+ m:()=>W(0,S('TOMADOR/ADQUIRENTE DO SERVIÇO')+Q('Onde está localizado o estabelecimento/domicílio? *')+R(['Brasil','Exterior','Tomador/Adquirente não informado'],0)+A(F('CPF/CNPJ *','000.000.000-00 &nbsp;🔍'))+F('Nome/Razão Social *','(preenchido pela Receita)',1))},
+{f:0,novo:1,t:'Preencha o endereço do tomador',
+ a:'Logo abaixo do nome, marque "Informar endereço". Digite o CEP e clique na lupa: o município vem preenchido. Complete bairro, logradouro e número. O endereço do tomador é obrigatório.',
+ d:'Telefone, e-mail e complemento são opcionais. Tenha o CEP do paciente ou da empresa em mãos antes de começar a nota.',
+ m:()=>W(0,F('Nome/Razão Social *','(nome do tomador)',1)+F('Telefone','')+F('E-mail','')+A('<span class="r" style="padding:4px">☑ Informar endereço</span>'+F('CEP *','00000-000 &nbsp;🔍'))+F('Município','(preenchido pelo CEP)',1)+A(F('Bairro *','')+F('Logradouro *','')+F('Número *',''))+F('Complemento',''))},
+{f:0,novo:1,t:'Destinatário: Sim. Intermediário: não informado',
+ a:'Na pergunta "o destinatário é o próprio adquirente?", marque Sim quando quem recebe o serviço é o mesmo tomador que você acabou de informar. Em "Intermediário do serviço", deixe "Intermediário não informado". Clique em Avançar.',
+ m:()=>W(0,S('DESTINATÁRIO DO SERVIÇO')+Q('Para fins de apuração do IBS/CBS, o destinatário é o próprio adquirente?')+A(R(['Sim','Não'],0))+'<hr class="s">'+S('INTERMEDIÁRIO DO SERVIÇO')+Q('Onde está localizado o estabelecimento/domicílio? *')+A(R(['Brasil','Exterior','Intermediário não informado'],2))+`<div class="dir"><span class="b">Avançar ›</span></div>`)},
+
+{f:1,t:'Local e código do serviço',
+ a:'Preencha como sempre: país, município da prestação, Código de Tributação Nacional (04.01.01 Medicina ou 04.03.03 Clínicas) e o código complementar municipal. Na pergunta sobre imunidade ou exportação, Não.',
+ d:'Use o mesmo código de tributação que a sua empresa já usava nas notas anteriores.',
+ m:()=>W(1,S('LOCAL DO FORNECIMENTO/PRESTAÇÃO DO SERVIÇO')+`<div class="g">${F('País *','Brasil ▾')}${F('Município *','Rio de Janeiro/RJ ▾')}</div>`+S('SERVIÇO/FORNECIMENTO PRESTADO')+F('Código de Tributação Nacional *','04.01.01 - Medicina. ▾')+F('Código Complementar Municipal *','04.01.01.001 - Medicina. ▾')+Q('É um caso de imunidade, exportação de serviço ou não incidência do ISSQN? *')+R(['Não','Sim'],0))},
+{f:1,novo:1,t:'Escolha o item da NBS',
+ a:'No campo "Item da NBS correspondente ao serviço", escolha conforme o seu código de tributação: 123012200 (Serviços médicos especializados) para 04.01.01, ou 123012100 (Serviços de clínica médica) para 04.03.03.',
+ d:'Digite o começo do número no campo que a lista filtra.',
+ m:()=>W(1,`<div class="g">${F('Município de incidência do ISSQN','Rio de Janeiro/RJ',1)}${F('Data de Competência','07/10/2026',1)}</div>`+A(F('Item da NBS correspondente ao serviço/fornecimento prestado *','123012200 - Serviços médicos especializados ▾')))},
+{f:1,novo:1,t:'Escolha o código indicador da operação',
+ a:'Este código diz onde o serviço foi prestado. Digite 030 para filtrar e escolha: 030101 no endereço da sua empresa (consultório), 030102 em outro local (hospital ou clínica de terceiros) ou 030103 no endereço do paciente (domiciliar).',
+ d:'Para anestesia feita em hospital, o caso é o 030102.',
+ m:()=>W(1,F('Código indicador da operação *','030')+`<div class="op" style="margin-top:-8px"><div>030101 - … Estabelecimento do fornecedor como local da prestação</div>${A('<div>030102 - … Local da prestação do serviço diverso do estabelecimento do fornecedor</div>')}<div>030103 - … Endereço do destinatário</div><div>030104 - … Endereço diverso do fornecedor, adquirente ou destinatário</div></div>`)},
+{f:1,t:'Escreva a descrição do serviço',
+ a:'No campo "Descrição do Serviço/Fornecimento", obrigatório, descreva o que foi feito: o serviço, o médico e o CRM, os códigos dos procedimentos, o cirurgião, o hospital e a data.',
+ d:'Modelo: "Serviços médicos em anestesia prestados pelo Dr. [nome], CRM [número], para os procedimentos [códigos] realizados pelo Dr. [cirurgião] no Hospital [nome] em [dd/mm/aaaa]." Confira a data antes de avançar. Os campos de "Informações complementares" abaixo são opcionais.',
+ m:()=>W(1,F('Código indicador da operação *','030102 - Serviço prestado fisicamente… ▾')+A(F('Descrição do Serviço/Fornecimento *','Serviços médicos em anestesia prestados pelo Dr. [nome], CRM [número], para os procedimentos [códigos] realizados pelo Dr. [cirurgião] no Hospital [nome] em [dd/mm/aaaa].'))+S('INFORMAÇÕES COMPLEMENTARES')+F('Número do documento de responsabilidade técnica','')+F('Documento de referência',''))},
+
+{f:2,t:'Valor e tributação municipal',
+ a:'Informe o valor do serviço e preencha a parte do ISSQN como você já fazia: operação tributável, regime especial, suspensão, retenção e benefício municipal, de acordo com a empresa.',
+ m:()=>W(2,S('VALORES DO FORNECIMENTO/SERVIÇO PRESTADO')+A(F('Valor da operação/serviço prestado *','R$ 1.000,00'))+S('TRIBUTAÇÃO MUNICIPAL')+`<div class="g">${F('Tributação do ISSQN','Operação Tributável ▾')}${F('Regime Especial de Tributação *','Nenhum ▾')}</div>`+Q('A exigibilidade do ISSQN está suspensa? *')+R(['Não','Sim'],0)+Q('Há retenção do ISSQN pelo Tomador ou Intermediário? *')+R(['Não','Sim'],0)+Q('Amparado por algum benefício municipal? *')+R(['Não'],0))},
+{f:2,t:'Tributação federal',
+ a:'Também continua igual: situação tributária do PIS/COFINS, alíquotas e retenções. Para pessoa física não há retenção de impostos. Para pessoa jurídica, as retenções seguem a regra entre prestador e tomador.',
+ d:'Os números da tela são só exemplo. Use os da sua empresa.',
+ m:()=>W(2,S('TRIBUTAÇÃO FEDERAL')+F('Situação Tributária do PIS/COFINS','01 - Operação Tributável com Alíquota Básica ▾')+`<div class="g">${F('PIS - Alíquota','0,65 %')}${F('COFINS - Alíquota','3,00 %')}</div>`+F('Tipo de retenção do PIS/COFINS/CSLL','3 - PIS/COFINS/CSLL Retidos ▾')+`<div class="g">${F('IRRF','R$ 15,00')}${F('Contribuições Sociais - Retidas','R$ 46,50')}</div>`)},
+{f:2,novo:1,t:'Preencha o bloco IBS/CBS',
+ a:'Este é o bloco novo. Em "Código de Situação Tributária", escolha 200 (Alíquota reduzida). Em "Código de Classificação Tributária", escolha 200029 (Fornecimento dos serviços de saúde humana, Anexo III).',
+ d:'Esses dois códigos valem para quem usa 04.01.01 (Medicina) ou 04.03.03 (Clínicas). O botão "Incluir Documento" só serve para casos de reembolso, repasse ou ressarcimento.',
+ m:()=>W(2,S('IBS/CBS')+`<div class="nota">Selecione os códigos de Situação e Classificação Tributária apropriados para o IBS/CBS.</div>`+A(F('Código de Situação Tributária *','200 - Alíquota reduzida ▾'))+A(F('Código de Classificação Tributária *','200029 - Fornecimento dos serviços de saúde humana (Anexo III) ▾'))+`<span class="b" style="background:#5d6870">+ Incluir Documento</span>`)},
+{f:2,t:'Valor aproximado dos tributos',
+ a:'Escolha "Configurar os valores percentuais correspondentes" e informe os percentuais federal, estadual e municipal da sua empresa.',
+ d:'No material de exemplo aparecem 11,33% federal, 0% estadual e 5% municipal. Confirme os seus com o contador.',
+ m:()=>W(2,S('VALOR APROXIMADO DOS TRIBUTOS')+R(['Preencher os valores monetários em cada NFS-e emitida','Configurar os valores percentuais correspondentes'],1)+`<div class="g3">${F('Federal *','11,33 %')}${F('Estadual *','0,00 %')}${F('Municipal *','5,00 %')}</div>`)},
+
+{f:3,t:'Confira e emita',
+ a:'Na última aba, revise o resumo da nota: tomador, serviço, valor e o bloco IBS/CBS com os códigos 200 e 200029. Estando certo, emita a NFS-e como sempre.',
+ d:'Se o bloco IBS/CBS não aparecer no resumo, volte ao passo 1: a resposta inicial ficou em Não.',
+ m:()=>W(3,S('RESUMO')+F('Tomador','(nome do tomador)',1)+F('Serviço','04.01.01 - Medicina · NBS 123012200 · Operação 030102',1)+F('IBS/CBS','CST 200 · Classificação 200029',1)+`<div class="dir">${'<span class="alvo"><span class="b">Emitir NFS-e</span></span>'}</div>`)}
+];
+
+// ---------- navegação ----------
+const app = document.getElementById('app'), rodape = document.getElementById('rodape');
+const bv = document.getElementById('bv'), ba = document.getElementById('ba');
+let atual = -1;
+const selo = p => p.novo ? '<span class="selo n">Novo</span>' : '<span class="selo i">Igual a antes</span>';
+const trilho = f => `<div class="trilho" aria-hidden="true">${ABAS.map((_,k)=>`<i class="${k<=f?'f':''}"></i>`).join('')}</div>`;
+
+function inicio(){
+  atual = -1; rodape.hidden = true;
+  let h = `<h1>NFS-e com IBS/CBS</h1>
+  <p class="suave">Você emite a nota como sempre. Dos ${P.length} passos, só ${P.filter(p=>p.novo).length} são novos, e estão marcados.</p>
+  <button class="principal" data-ir="0">Começar pelo passo 1</button>
+  <h3>Os códigos novos, para ter à mão</h3>
+  <div class="cola">
+    <div><b>200</b><span>Código de Situação Tributária: alíquota reduzida</span></div>
+    <div><b>200029</b><span>Classificação Tributária: serviços de saúde humana (Anexo III)</span></div>
+    <div><b>123012200</b><span>Item da NBS para 04.01.01 (Medicina)</span></div>
+    <div><b>123012100</b><span>Item da NBS para 04.03.03 (Clínicas)</span></div>
+    <div><b>030101</b><span>Serviço no endereço da empresa (consultório)</span></div>
+    <div><b>030102</b><span>Serviço em outro local (hospital)</span></div>
+    <div><b>030103</b><span>Serviço no endereço do tomador (domiciliar)</span></div>
+  </div>
+  <p class="aviso">Guia montado a partir das orientações do contador, para empresa no Lucro Presumido com código 04.01.01 ou 04.03.03. As telas são simulações com dados fictícios. Alíquotas, retenções e regime especial variam por empresa: confirme com o seu contador.</p>`;
+  ABAS.forEach((n,k)=>{
+    h += `<h3>Aba ${k+1}: ${n}</h3><ol class="lista">`;
+    P.forEach((p,j)=>{ if(p.f===k) h += `<li><button data-ir="${j}"><span class="n">${j+1}</span><span class="t">${p.t}</span>${selo(p)}</button></li>`; });
+    h += `</ol>`;
+  });
+  app.innerHTML = h; window.scrollTo(0,0);
+}
+function passo(i){
+  atual = i; rodape.hidden = false;
+  const p = P[i];
+  app.innerHTML = `<div class="topo"><button class="link" data-lista>Todos os passos</button><span class="suave">Passo ${i+1} de ${P.length}</span></div>
+  ${trilho(p.f)}<p class="suave" style="margin:10px 0 6px">Aba ${p.f+1}: ${ABAS[p.f]} &nbsp;${selo(p)}</p>
+  <h2>${p.t}</h2><p class="acao">${p.a}</p>${p.m()}
+  <p class="legenda"><span></span>O contorno amarelo mostra o que preencher ou conferir.</p>
+  ${p.d?`<p class="dica">${p.d}</p>`:''}`;
+  bv.disabled = i===0;
+  ba.textContent = i===P.length-1 ? 'Concluir' : 'Próximo passo';
+  window.scrollTo(0,0);
+}
+app.addEventListener('click', e=>{
+  const b = e.target.closest('[data-ir]'); if(b) return passo(+b.dataset.ir);
+  if(e.target.closest('[data-lista]')) inicio();
+});
+bv.onclick = ()=>{ if(atual>0) passo(atual-1); };
+ba.onclick = ()=>{ if(atual<P.length-1) passo(atual+1); else inicio(); };
+document.addEventListener('keydown', e=>{
+  if(atual<0) return;
+  if(e.key==='ArrowRight' && atual<P.length-1) passo(atual+1);
+  if(e.key==='ArrowLeft' && atual>0) passo(atual-1);
+});
+inicio();
+</script>
+</body>
+</html>
